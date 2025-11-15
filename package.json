@@ -1,0 +1,34 @@
+{
+  "name": "@tabbridge/use-multi-tab-detection",
+  "version": "1.0.0",
+  "description": "React hook for detecting when your application is open in multiple browser tabs",
+  "main": "index.js",
+  "scripts": {
+    "test": "foo"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TabBridge/useMultiTabDetection.git"
+  },
+  "keywords": [
+    "react",
+    "react-hook",
+    "multi-tab",
+    "tab-detection",
+    "browser-tabs",
+    "tab-sync",
+    "cross-tab",
+    "duplicate-tab",
+    "tab-coordination",
+    "broadcast-channel",
+    "localstorage",
+    "session-management",
+    "tab-awareness"
+  ],
+  "author": "Maxwell Shick maxwellshick@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TabBridge/useMultiTabDetection/issues"
+  },
+  "homepage": "https://github.com/TabBridge/useMultiTabDetection#readme"
+}
