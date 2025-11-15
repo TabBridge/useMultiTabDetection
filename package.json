@@ -25,7 +25,7 @@
     "session-management",
     "tab-awareness"
   ],
-  "author": "Maxwell Shick maxwellshick@gmail.com",
+  "author": "Maxwell Shick <maxwellshick@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/TabBridge/useMultiTabDetection/issues"
