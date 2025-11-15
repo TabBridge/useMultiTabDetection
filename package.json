@@ -30,5 +30,8 @@
   "bugs": {
     "url": "https://github.com/TabBridge/useMultiTabDetection/issues"
   },
-  "homepage": "https://github.com/TabBridge/useMultiTabDetection#readme"
+  "homepage": "https://github.com/TabBridge/useMultiTabDetection#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }
