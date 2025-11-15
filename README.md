@@ -1,2 +1,2 @@
 # useMultiTabDetection
-Developer tools for building multi-tab aware applications
+Developer tool for building multi-tab aware applications
