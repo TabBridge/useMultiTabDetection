@@ -1,10 +1,17 @@
 {
   "name": "@tabbridge/use-multi-tab-detection",
-  "version": "1.0.0",
+  "version": "0.0.3",
   "description": "React hook for detecting when your application is open in multiple browser tabs",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "test": "foo"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist"
   },
   "repository": {
     "type": "git",
@@ -33,5 +40,10 @@
   "homepage": "https://github.com/TabBridge/useMultiTabDetection#readme",
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3"
   }
 }

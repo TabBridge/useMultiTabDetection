@@ -1,4 +1,5 @@
 export function useMultiTabDetection() {
   console.warn('useMultiTabDetection is not yet implemented');
-  return null;
+  const foo = 'bar';
+  return foo;
 }
