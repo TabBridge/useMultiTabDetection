@@ -14,7 +14,6 @@ A lightweight React hook for detecting when your application is open in multiple
 - ✅ Callback support for state changes
 - ✅ Browser support detection
 - ✅ Zero dependencies (except React peer dependency)
-- ✅ Lightweight (~2KB gzipped)
 
 ## Installation
 
