@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   MessageType,
   TabInfo,
   TabMessage,
   UseMultiTabDetectionOptions,
-  UseMultiTabDetectionReturn
-} from './types';
+  UseMultiTabDetectionReturn,
+} from "./types";
 
 /**
  * Custom React hook to detect when a user has multiple tabs open.
@@ -41,7 +41,7 @@ export function useMultiTabDetection(
     debug = false,
     heartbeatInterval = 10000, // Defaults to 10 seconds
     inactivityThreshold = 30000, // Defaults to 30 seconds
-    onMultiTabChange
+    onMultiTabChange,
   } = options;
 
   /**
@@ -58,11 +58,17 @@ export function useMultiTabDetection(
   const channelRef = useRef<BroadcastChannel | null>(null);
 
   // Map of active tabs (tabId -> TabInfo)
-  const activeTabsRef = useRef<Map<string, TabInfo>>(new Map());
+  const activeTabsRef = useRef<Map<string, TabInfo>>(
+    new Map<string, TabInfo>()
+  );
 
   // Timers
-  const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const cleanupTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
+  const cleanupIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
   const leaderElectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -100,21 +106,31 @@ export function useMultiTabDetection(
    * Leader is the tab with the lexicographically smallest tabId
    */
   const determineLeadership = useCallback(() => {
+    const isVisible = typeof document !== "undefined" && !document.hidden;
+
+    if (!isVisible) {
+      // Hidden tabs are never leaders
+      const wasLeader = isLeaderRef.current;
+      isLeaderRef.current = false;
+      if (wasLeader) {
+        log("This tab is no longer the leader (hidden)");
+      }
+      return false;
+    }
+
     const allTabIds = Array.from(activeTabsRef.current.keys());
-    allTabIds.push(tabIdRef.current); // Include current tab
-
-    // Sort tab IDs and check if current tab is the smallest
+    allTabIds.push(tabIdRef.current);
     allTabIds.sort();
-    const shouldBeLeader = allTabIds[0] === tabIdRef.current;
 
+    const shouldBeLeader = allTabIds[0] === tabIdRef.current;
     const wasLeader = isLeaderRef.current;
     isLeaderRef.current = shouldBeLeader;
 
     if (wasLeader !== shouldBeLeader) {
       log(
         shouldBeLeader
-          ? 'This tab is now the leader'
-          : 'This tab is now a follower'
+          ? "This tab is now the leader (visible + lowest tabId)"
+          : "This tab is now a follower (visible but not lowest tabId)"
       );
     }
 
@@ -130,7 +146,7 @@ export function useMultiTabDetection(
       ([, info]) => now - info.lastHeartbeat < inactivityThreshold
     );
     const currentUrl =
-      typeof window !== 'undefined' ? window.location.href : '';
+      typeof window !== "undefined" ? window.location.href : "";
 
     // Update the active tabs map
     activeTabsRef.current = new Map(activeTabs);
@@ -139,7 +155,7 @@ export function useMultiTabDetection(
     activeTabsRef.current.set(tabIdRef.current, {
       tabId: tabIdRef.current,
       lastHeartbeat: now,
-      url: currentUrl
+      url: currentUrl,
     });
 
     const newTabCount = activeTabsRef.current.size;
@@ -150,8 +166,8 @@ export function useMultiTabDetection(
       urlMap.set(tabId, info.url);
     });
 
-    log('Active tabs:', Array.from(activeTabsRef.current.keys()));
-    log('Active URLs:', Array.from(urlMap.entries()));
+    log("Active tabs:", Array.from(activeTabsRef.current.keys()));
+    log("Active URLs:", Array.from(urlMap.entries()));
 
     setTabCount(newTabCount);
     setIsMultiTab(newIsMultiTab);
@@ -170,12 +186,12 @@ export function useMultiTabDetection(
       (prevIsMultiTabRef.current !== newIsMultiTab ||
         prevTabCountRef.current !== newTabCount)
     ) {
-      log('Leader firing onMultiTabChange callback');
+      log("Leader firing onMultiTabChange callback");
       onMultiTabChange(newIsMultiTab, newTabCount, urlMap);
       prevIsMultiTabRef.current = newIsMultiTab;
       prevTabCountRef.current = newTabCount;
     } else if (!isLeader && onMultiTabChange) {
-      log('Follower suppressing callback (leader will handle it)');
+      log("Follower suppressing callback (leader will handle it)");
     }
     /**
      * Disable exhaustive-deps to avoid re-creating the function
@@ -192,20 +208,20 @@ export function useMultiTabDetection(
     (type: MessageType): void => {
       if (channelRef.current) {
         const currentUrl =
-          typeof window !== 'undefined' ? window.location.href : '';
+          typeof window !== "undefined" ? window.location.href : "";
 
         const message: TabMessage = {
           type,
           tabId: tabIdRef.current,
           timestamp: Date.now(),
-          url: currentUrl
+          url: currentUrl,
         };
 
         try {
           channelRef.current.postMessage(message);
-          log('Sent message:', message);
+          log("Sent message:", message);
         } catch (error) {
-          console.error('[MultiTab] Error sending message:', error);
+          console.error("[MultiTab] Error sending message:", error);
         }
       }
     },
@@ -224,36 +240,36 @@ export function useMultiTabDetection(
         return;
       }
 
-      log('Received message:', message);
+      log("Received message:", message);
 
       switch (message.type) {
-        case 'heartbeat':
-        case 'request-active-tabs':
+        case "heartbeat":
+        case "request-active-tabs":
           // Update or add the tab to active tabs
           activeTabsRef.current.set(message.tabId, {
             tabId: message.tabId,
             lastHeartbeat: message.timestamp,
-            url: message.url || '' // Store the URL from the message
+            url: message.url || "", // Store the URL from the message
           });
 
           // If another tab is requesting active tabs, respond with our heartbeat
-          if (message.type === 'request-active-tabs') {
-            sendMessage('heartbeat');
+          if (message.type === "request-active-tabs") {
+            sendMessage("heartbeat");
           }
 
           updateTabState();
           break;
 
-        case 'tab-closed':
+        case "tab-closed":
           // Remove the tab from active tabs
           activeTabsRef.current.delete(message.tabId);
           updateTabState();
           break;
 
-        case 'request-leader':
+        case "request-leader":
           // Another tab is requesting leader election
           // Respond with our presence so leadership can be re-determined
-          sendMessage('heartbeat');
+          sendMessage("heartbeat");
           // Re-evaluate leadership after a short delay to let all tabs respond
           if (leaderElectionTimerRef.current) {
             clearTimeout(leaderElectionTimerRef.current);
@@ -265,7 +281,7 @@ export function useMultiTabDetection(
 
         default: {
           const _exhaustiveCheck: never = message.type;
-          log('Unknown message type:', _exhaustiveCheck);
+          log("Unknown message type:", _exhaustiveCheck);
           break;
         }
       }
@@ -285,7 +301,7 @@ export function useMultiTabDetection(
         tabId !== tabIdRef.current &&
         now - info.lastHeartbeat >= inactivityThreshold
       ) {
-        log('Removing inactive tab:', tabId);
+        log("Removing inactive tab:", tabId);
         activeTabsRef.current.delete(tabId);
         hasChanges = true;
       }
@@ -298,59 +314,57 @@ export function useMultiTabDetection(
 
   useEffect(() => {
     // Check if BroadcastChannel is supported
-    const supported = typeof BroadcastChannel !== 'undefined';
+    const supported = typeof BroadcastChannel !== "undefined";
     setIsSupported(supported);
 
     if (!supported) {
-      console.warn(
-        '[MultiTab] BroadcastChannel API is not supported in this browser'
-      );
+      log("[MultiTab] BroadcastChannel API is not supported in this browser");
       return;
     }
 
-    log('Initializing multi-tab detection');
+    log("Initializing multi-tab detection");
 
     try {
       // Create BroadcastChannel
       channelRef.current = new BroadcastChannel(channelName);
-      channelRef.current.addEventListener('message', handleMessage);
+      channelRef.current.addEventListener("message", handleMessage);
 
       // Request active tabs from any existing tabs
-      sendMessage('request-active-tabs');
+      sendMessage("request-active-tabs");
 
       // Start heartbeat
-      heartbeatTimerRef.current = setInterval(() => {
-        sendMessage('heartbeat');
+      heartbeatIntervalRef.current = setInterval(() => {
+        sendMessage("heartbeat");
       }, heartbeatInterval);
 
       // Start cleanup timer
-      cleanupTimerRef.current = setInterval(() => {
+      cleanupIntervalRef.current = setInterval(() => {
         cleanupInactiveTabs();
       }, inactivityThreshold / 2);
 
       // Send initial heartbeat immediately
-      sendMessage('heartbeat');
+      sendMessage("heartbeat");
       updateTabState();
 
       // Cleanup on unmount or page unload
       const handleUnload = (): void => {
-        sendMessage('tab-closed');
+        sendMessage("tab-closed");
       };
 
-      window.addEventListener('beforeunload', handleUnload);
+      window.addEventListener("beforeunload", handleUnload);
 
       return () => {
-        log('Cleaning up multi-tab detection');
+        log("Cleaning up multi-tab detection");
 
         // Send tab-closed message
-        sendMessage('tab-closed');
+        sendMessage("tab-closed");
 
         // Clear timers
-        if (heartbeatTimerRef.current) {
-          clearInterval(heartbeatTimerRef.current);
+        if (heartbeatIntervalRef.current) {
+          clearInterval(heartbeatIntervalRef.current);
         }
-        if (cleanupTimerRef.current) {
-          clearInterval(cleanupTimerRef.current);
+        if (cleanupIntervalRef.current) {
+          clearInterval(cleanupIntervalRef.current);
         }
         if (leaderElectionTimerRef.current) {
           clearTimeout(leaderElectionTimerRef.current);
@@ -358,16 +372,17 @@ export function useMultiTabDetection(
 
         // Close channel
         if (channelRef.current) {
-          channelRef.current.removeEventListener('message', handleMessage);
+          channelRef.current.removeEventListener("message", handleMessage);
           channelRef.current.close();
         }
 
         // Remove unload listener
-        window.removeEventListener('beforeunload', handleUnload);
+        window.removeEventListener("beforeunload", handleUnload);
       };
     } catch (error) {
-      console.error('[MultiTab] Error initializing:', error);
+      log("[MultiTab] Error initializing:", error);
       setIsSupported(false);
+      return;
     }
   }, [
     channelName,
@@ -377,15 +392,40 @@ export function useMultiTabDetection(
     inactivityThreshold,
     sendMessage,
     updateTabState,
-    log
+    log,
   ]);
+
+  useEffect(() => {
+    if (!isSupported) return;
+
+    const handleVisibilityChange = () => {
+      const isVisible = !document.hidden;
+      log("Visibility changed:", isVisible ? "visible" : "hidden");
+
+      if (isVisible) {
+        sendMessage("request-leader");
+      } else {
+        if (isLeaderRef.current) {
+          log("Tab hidden, stepping down as leader");
+          isLeaderRef.current = false;
+          sendMessage("request-leader");
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isSupported, sendMessage, log]);
 
   return {
     isMultiTab,
     tabCount,
     tabId: tabIdRef.current,
     isSupported,
-    activeTabUrls
+    activeTabUrls,
   };
 }
 
@@ -394,5 +434,5 @@ export type {
   UseMultiTabDetectionReturn,
   MessageType,
   TabMessage,
-  TabInfo
-} from './types';
+  TabInfo,
+} from "./types";
